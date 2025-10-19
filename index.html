@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オセロゲーム - 強化版AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .settings {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .setting-row {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-row label {
+            font-weight: bold;
+            min-width: 100px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        select {
+            padding: 5px 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .warning {
+            font-size: 12px;
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .warning.red {
+            color: red;
+        }
+
+        .start-button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .start-button.green {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .start-button.orange {
+            background: #FF9800;
+            color: white;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .result {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 24px;
+            display: none;
+        }
+
+        .result.win {
+            background: #4CAF50;
+            color: white;
+            display: block;
+        }
+
+        .result.lose {
+            background: #f44336;
+            color: white;
+            display: block;
+        }
+
+        .result.draw {
+            background: #FF9800;
+            color: white;
+            display: block;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 15px 0;
+            color: #333;
+            min-height: 24px;
+        }
+
+        .ai-status {
+            text-align: center;
+            font-size: 14px;
+            color: #2196F3;
+            margin-bottom: 15px;
+            min-height: 20px;
+        }
+
+        #board {
+            width: 480px;
+            height: 480px;
+            margin: 0 auto;
+            background: #2d5016;
+            border: 3px solid #1a3009;
+            border-radius: 5px;
+            position: relative;
+            cursor: pointer;
+            box-sizing: content-box;
+        }
+
+        .cell {
+            position: absolute;
+            border: 1px solid #1a3009;
+        }
+
+        .piece {
+            position: absolute;
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .piece.black {
+            background: radial-gradient(circle at 30% 30%, #333, #000);
+            border: 2px solid #555;
+        }
+
+        .piece.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            border: 2px solid #999;
+        }
+
+        .hint {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hint.yellow {
+            background: rgba(255, 235, 59, 0.6);
+        }
+
+        .hint.gray {
+            background: rgba(200, 200, 200, 0.4);
+        }
+
+        .last-move {
+            position: absolute;
+            border-radius: 50%;
+            background: red;
+            border: 2px solid darkred;
+            pointer-events: none;
+        }
+
+        @media (max-width: 600px) {
+            #board {
+                width: 320px;
+                height: 320px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>オセロゲーム - 強化版AI</h1>
+        
+        <div class="settings">
+            <div class="setting-row">
+                <label>あなたの色:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="color" value="1" checked> 黒(先手)</label>
+                    <label><input type="radio" name="color" value="2"> 白(後手)</label>
+                </div>
+            </div>
+            
+            <div class="setting-row">
+                <label>AI強さ:</label>
+                <select id="depth">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                </select>
+                <span class="warning" id="depthWarning">(1:弱い〜8:最強)</span>
+            </div>
+            
+            <button class="start-button green" id="startButton">スタート</button>
+        </div>
+        
+        <div class="result" id="result"></div>
+        <div class="status" id="status">設定を選んでスタートボタンを押してください</div>
+        <div class="ai-status" id="aiStatus"></div>
+        
+        <div id="board"></div>
+    </div>
+
+    <script>
+        class OthelloGame {
+            constructor() {
+                this.boardSize = 8;
+                this.cellSize = 60;
+                this.board = [];
+                this.currentPlayer = 1;
+                this.gameOver = false;
+                this.thinking = false;
+                this.lastCpuMove = null;
+                this.gameStarted = false;
+                this.playerColor = 1;
+                this.cpuColor = 2;
+                this.searchDepth = 4;
+                this.nodesSearched = 0;
+                this.winningTree = {};
+                this.thinkingInterval = null;
+                this.thinkingIndex = 0;
+                this.thinkingSymbols = ['|', '/', '-', '\\'];
+                this.thinkingBaseText = '';
+                
+                this.positionWeights = [
+                    [120, -20,  20,   5,   5,  20, -20, 120],
+                    [-20, -40,  -5,  -5,  -5,  -5, -40, -20],
+                    [ 20,  -5,  15,   3,   3,  15,  -5,  20],
+                    [  5,  -5,   3,   3,   3,   3,  -5,   5],
+                    [  5,  -5,   3,   3,   3,   3,  -5,   5],
+                    [ 20,  -5,  15,   3,   3,  15,  -5,  20],
+                    [-20, -40,  -5,  -5,  -5,  -5, -40, -20],
+                    [120, -20,  20,   5,   5,  20, -20, 120]
+                ];
+                
+                this.initElements();
+                this.initEventListeners();
+                this.drawInitialBoard();
+            }
+            
+            initElements() {
+                this.boardElement = document.getElementById('board');
+                this.statusElement = document.getElementById('status');
+                this.aiStatusElement = document.getElementById('aiStatus');
+                this.resultElement = document.getElementById('result');
+                this.startButton = document.getElementById('startButton');
+                this.depthSelect = document.getElementById('depth');
+                this.depthWarning = document.getElementById('depthWarning');
+                
+                if (window.innerWidth <= 600) {
+                    this.cellSize = 40;
+                    this.boardElement.style.width = '320px';
+                    this.boardElement.style.height = '320px';
+                }
+            }
+            
+            initEventListeners() {
+                this.startButton.addEventListener('click', () => this.toggleGame());
+                this.depthSelect.addEventListener('change', () => this.updateDepthWarning());
+                this.boardElement.addEventListener('click', (e) => this.onClick(e));
+            }
+            
+            updateDepthWarning() {
+                const depth = parseInt(this.depthSelect.value);
+                if (depth >= 6) {
+                    this.depthWarning.textContent = '(1:弱い〜8:最強) ※思考時間が長くなる可能性あり';
+                    this.depthWarning.classList.add('red');
+                } else {
+                    this.depthWarning.textContent = '(1:弱い〜8:最強)';
+                    this.depthWarning.classList.remove('red');
+                }
+            }
+            
+            toggleGame() {
+                if (!this.gameStarted) {
+                    this.startGame();
+                } else {
+                    this.stopGame();
+                }
+            }
+            
+            startGame() {
+                this.gameStarted = true;
+                this.gameOver = false;
+                this.thinking = false;
+                this.winningTree = {};
+                
+                const colorRadios = document.querySelectorAll('input[name="color"]');
+                this.playerColor = parseInt(Array.from(colorRadios).find(r => r.checked).value);
+                this.cpuColor = 3 - this.playerColor;
+                this.searchDepth = parseInt(this.depthSelect.value);
+                
+                this.startButton.textContent = '中断';
+                this.startButton.classList.remove('green');
+                this.startButton.classList.add('orange');
+                this.depthSelect.disabled = true;
+                colorRadios.forEach(r => r.disabled = true);
+                
+                this.resetBoard();
+                this.currentPlayer = 1;
+                this.drawBoard();
+                this.updateStatus();
+                
+                if (this.playerColor === 2) {
+                    setTimeout(() => this.cpuTurn(), 500);
+                }
+            }
+            
+            stopGame() {
+                this.gameStarted = false;
+                this.gameOver = false;
+                this.thinking = false;
+                this.winningTree = {};
+                this.stopThinkingAnimation();
+                
+                this.startButton.textContent = 'スタート';
+                this.startButton.classList.remove('orange');
+                this.startButton.classList.add('green');
+                this.depthSelect.disabled = false;
+                document.querySelectorAll('input[name="color"]').forEach(r => r.disabled = false);
+                
+                this.aiStatusElement.textContent = '';
+                this.resultElement.style.display = 'none';
+                this.resultElement.className = 'result';
+                this.statusElement.textContent = '設定を選んでスタートボタンを押してください';
+            }
+            
+            resetBoard() {
+                this.board = Array(this.boardSize).fill().map(() => Array(this.boardSize).fill(0));
+                const mid = this.boardSize / 2;
+                this.board[mid-1][mid-1] = this.board[mid][mid] = 2;
+                this.board[mid-1][mid] = this.board[mid][mid-1] = 1;
+                this.lastCpuMove = null;
+                this.nodesSearched = 0;
+            }
+            
+            drawInitialBoard() {
+                this.boardElement.innerHTML = '';
+                
+                for (let i = 0; i <= this.boardSize; i++) {
+                    const vLine = document.createElement('div');
+                    vLine.style.cssText = `
+                        position: absolute;
+                        left: ${i * this.cellSize}px;
+                        top: 0;
+                        width: 2px;
+                        height: ${this.boardSize * this.cellSize}px;
+                        background: #1a3009;
+                    `;
+                    this.boardElement.appendChild(vLine);
+                    
+                    const hLine = document.createElement('div');
+                    hLine.style.cssText = `
+                        position: absolute;
+                        left: 0;
+                        top: ${i * this.cellSize}px;
+                        width: ${this.boardSize * this.cellSize}px;
+                        height: 2px;
+                        background: #1a3009;
+                    `;
+                    this.boardElement.appendChild(hLine);
+                }
+                
+                const mid = this.boardSize / 2;
+                this.drawPiece(mid-1, mid-1, 2);
+                this.drawPiece(mid, mid, 2);
+                this.drawPiece(mid-1, mid, 1);
+                this.drawPiece(mid, mid-1, 1);
+            }
+            
+            drawBoard() {
+                const pieces = this.boardElement.querySelectorAll('.piece, .hint, .last-move');
+                pieces.forEach(p => p.remove());
+                
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] !== 0) {
+                            this.drawPiece(row, col, this.board[row][col]);
+                        }
+                    }
+                }
+                
+                if (!this.gameOver && this.gameStarted) {
+                    const validMoves = this.getValidMoves(this.currentPlayer);
+                    const hintColor = this.currentPlayer === this.playerColor ? 'yellow' : 'gray';
+                    
+                    validMoves.forEach(([row, col]) => {
+                        const hint = document.createElement('div');
+                        hint.className = `hint ${hintColor}`;
+                        const x = col * this.cellSize + this.cellSize / 2;
+                        const y = row * this.cellSize + this.cellSize / 2;
+                        hint.style.cssText = `
+                            left: ${x - 6}px;
+                            top: ${y - 6}px;
+                            width: 12px;
+                            height: 12px;
+                        `;
+                        this.boardElement.appendChild(hint);
+                    });
+                }
+                
+                if (this.lastCpuMove) {
+                    const [row, col] = this.lastCpuMove;
+                    const marker = document.createElement('div');
+                    marker.className = 'last-move';
+                    const x = col * this.cellSize + this.cellSize / 2;
+                    const y = row * this.cellSize + this.cellSize / 2;
+                    marker.style.cssText = `
+                        left: ${x - 8}px;
+                        top: ${y - 8}px;
+                        width: 16px;
+                        height: 16px;
+                    `;
+                    this.boardElement.appendChild(marker);
+                }
+            }
+            
+            drawPiece(row, col, player) {
+                const piece = document.createElement('div');
+                piece.className = `piece ${player === 1 ? 'black' : 'white'}`;
+                const x = col * this.cellSize + 5;
+                const y = row * this.cellSize + 5;
+                const size = this.cellSize - 10;
+                piece.style.cssText = `
+                    left: ${x}px;
+                    top: ${y}px;
+                    width: ${size}px;
+                    height: ${size}px;
+                `;
+                this.boardElement.appendChild(piece);
+            }
+            
+            onClick(event) {
+                if (this.gameOver || this.currentPlayer !== this.playerColor || 
+                    this.thinking || !this.gameStarted) {
+                    return;
+                }
+                
+                const rect = this.boardElement.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                
+                const col = Math.floor(x / this.cellSize);
+                const row = Math.floor(y / this.cellSize);
+                
+                if (row >= 0 && row < this.boardSize && col >= 0 && col < this.boardSize) {
+                    if (this.isValidMove(row, col, this.currentPlayer)) {
+                        this.lastCpuMove = null;
+                        this.makeMove(row, col, this.currentPlayer);
+                        this.drawBoard();
+                        this.updateStatus();
+                        
+                        if (!this.gameOver) {
+                            // 相手が置けるかチェック
+                            const opponentMoves = this.getValidMoves(this.currentPlayer);
+                            if (opponentMoves.length === 0) {
+                                // 相手が置けない場合、自分のターンに戻る
+                                this.currentPlayer = this.playerColor;
+                                this.drawBoard();
+                                this.updateStatus();
+                                
+                                // 自分も置けない場合はゲーム終了
+                                const myMoves = this.getValidMoves(this.playerColor);
+                                if (myMoves.length === 0) {
+                                    this.checkGameOver();
+                                }
+                            } else if (this.currentPlayer === this.cpuColor) {
+                                // CPUのターンなら実行
+                                setTimeout(() => this.cpuTurn(), 300);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            cpuTurn() {
+                if (this.gameOver || this.thinking || !this.gameStarted || 
+                    this.currentPlayer !== this.cpuColor) {
+                    return;
+                }
+                
+                const validMoves = this.getValidMoves(this.cpuColor);
+                if (validMoves.length === 0) {
+                    this.currentPlayer = this.playerColor;
+                    this.checkGameOver();
+                    return;
+                }
+                
+                const boardHash = this.getBoardHash();
+                if (this.winningTree[boardHash]) {
+                    const bestMove = this.winningTree[boardHash];
+                    this.lastCpuMove = bestMove;
+                    this.makeMove(bestMove[0], bestMove[1], this.cpuColor);
+                    this.drawBoard();
+                    this.updateStatus();
+                    this.aiStatusElement.textContent = '必勝 | 勝ち筋ツリーから即座に応手';
+                    if (!this.gameOver) {
+                        // プレイヤーが置けるかチェック
+                        const playerMoves = this.getValidMoves(this.playerColor);
+                        if (playerMoves.length === 0) {
+                            // プレイヤーが置けない場合、CPUが連続で打つ
+                            this.currentPlayer = this.cpuColor;
+                            this.drawBoard();
+                            this.updateStatus();
+                            
+                            const cpuMoves = this.getValidMoves(this.cpuColor);
+                            if (cpuMoves.length === 0) {
+                                this.checkGameOver();
+                            } else {
+                                setTimeout(() => this.cpuTurn(), 1000);
+                            }
+                        }
+                    }
+                    return;
+                }
+                
+                this.thinking = true;
+                this.drawBoard();
+                
+                const emptyCells = this.board.flat().filter(c => c === 0).length;
+                const thresholds = {1:3, 2:3, 3:5, 4:7, 5:9, 6:11, 7:11, 8:13};
+                const threshold = thresholds[this.searchDepth] || 14;
+                
+                let depth;
+                if (emptyCells <= threshold) {
+                    depth = emptyCells;
+                    this.thinkingBaseText = `AIが思考中...(終盤完全読み: 残り${emptyCells}手)`;
+                } else {
+                    depth = this.searchDepth;
+                    this.thinkingBaseText = `AIが思考中...(深さ${depth}で探索)`;
+                }
+                
+                this.startThinkingAnimation();
+                
+                setTimeout(() => {
+                    const startTime = Date.now();
+                    this.nodesSearched = 0;
+                    
+                    const [bestMove, bestScore] = this.alphaBetaSearch(depth, this.cpuColor);
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    
+                    this.finishCpuThinking(bestMove, bestScore, elapsed);
+                }, 100);
+            }
+            
+            startThinkingAnimation() {
+                this.thinkingIndex = 0;
+                this.updateThinkingAnimation();
+            }
+            
+            updateThinkingAnimation() {
+                if (this.thinking && this.gameStarted) {
+                    const symbol = this.thinkingSymbols[this.thinkingIndex];
+                    this.aiStatusElement.textContent = `${this.thinkingBaseText} ${symbol}`;
+                    this.thinkingIndex = (this.thinkingIndex + 1) % this.thinkingSymbols.length;
+                    this.thinkingInterval = setTimeout(() => this.updateThinkingAnimation(), 100);
+                }
+            }
+            
+            stopThinkingAnimation() {
+                if (this.thinkingInterval) {
+                    clearTimeout(this.thinkingInterval);
+                    this.thinkingInterval = null;
+                }
+            }
+            
+            finishCpuThinking(bestMove, bestScore, elapsed) {
+                this.stopThinkingAnimation();
+                
+                if (bestMove) {
+                    this.lastCpuMove = bestMove;
+                    this.makeMove(bestMove[0], bestMove[1], this.cpuColor);
+                    this.drawBoard();
+                    this.updateStatus();
+                    
+                    const scoreText = this.formatScore(bestScore);
+                    this.aiStatusElement.textContent = 
+                        `評価値: ${scoreText} | 探索ノード数: ${this.nodesSearched} | 時間: ${elapsed.toFixed(2)}秒`;
+                }
+                
+                this.thinking = false;
+                
+                if (!this.gameOver) {
+                    // プレイヤーが置けるかチェック
+                    const playerMoves = this.getValidMoves(this.playerColor);
+                    if (playerMoves.length === 0) {
+                        // プレイヤーが置けない場合、CPUが連続で打つ
+                        this.currentPlayer = this.cpuColor;
+                        this.drawBoard();
+                        this.updateStatus();
+                        
+                        // CPUも置けない場合はゲーム終了
+                        const cpuMoves = this.getValidMoves(this.cpuColor);
+                        if (cpuMoves.length === 0) {
+                            this.checkGameOver();
+                        } else {
+                            setTimeout(() => this.cpuTurn(), 1000);
+                        }
+                    }
+                }
+            }
+            
+            formatScore(score) {
+                if (score >= 10000) {
+                    return `+${score - 10000}石差で勝ち`;
+                } else if (score <= -10000) {
+                    return `-${Math.abs(score + 10000)}石差で負け`;
+                } else {
+                    return score.toString();
+                }
+            }
+            
+            alphaBetaSearch(depth, player) {
+                const validMoves = this.getValidMoves(player);
+                
+                if (validMoves.length === 0) {
+                    return [null, this.evaluateBoard(player)];
+                }
+                
+                let orderedMoves = this.orderMoves(validMoves, player);
+                
+                if (this.searchDepth >= 6 && orderedMoves.length > 8) {
+                    orderedMoves = orderedMoves.slice(0, 8);
+                }
+                
+                let bestMove = null;
+                let alpha = -Infinity;
+                const beta = Infinity;
+                
+                for (const move of orderedMoves) {
+                    const boardCopy = this.copyBoard();
+                    this.applyMove(move[0], move[1], player);
+                    
+                    const score = this.minimax(depth - 1, 3 - player, alpha, beta, false);
+                    
+                    this.board = boardCopy;
+                    
+                    if (score > alpha) {
+                        alpha = score;
+                        bestMove = move;
+                    }
+                }
+                
+                return [bestMove, alpha];
+            }
+            
+            minimax(depth, player, alpha, beta, maximizing) {
+                this.nodesSearched++;
+                
+                const emptyCells = this.board.flat().filter(c => c === 0).length;
+                const playerStones = this.board.flat().filter(c => c === player).length;
+                const opponent = 3 - player;
+                const opponentStones = this.board.flat().filter(c => c === opponent).length;
+                
+                if (emptyCells === 0 || playerStones === 0 || opponentStones === 0) {
+                    return this.evaluateBoard(this.cpuColor);
+                }
+                
+                const validMoves = this.getValidMoves(player);
+                const opponentMoves = this.getValidMoves(opponent);
+                
+                if (depth === 0 || (validMoves.length === 0 && opponentMoves.length === 0)) {
+                    return this.evaluateBoard(this.cpuColor);
+                }
+                
+                if (validMoves.length === 0) {
+                    return this.minimax(depth - 1, opponent, alpha, beta, !maximizing);
+                }
+                
+                let orderedMoves = this.orderMoves(validMoves, player);
+                
+                if (this.searchDepth >= 6 && orderedMoves.length > 6) {
+                    orderedMoves = orderedMoves.slice(0, 6);
+                }
+                
+                if (maximizing) {
+                    let maxEval = -Infinity;
+                    for (const move of orderedMoves) {
+                        const boardCopy = this.copyBoard();
+                        this.applyMove(move[0], move[1], player);
+                        
+                        const evalScore = this.minimax(depth - 1, opponent, alpha, beta, false);
+                        
+                        this.board = boardCopy;
+                        
+                        maxEval = Math.max(maxEval, evalScore);
+                        alpha = Math.max(alpha, evalScore);
+                        
+                        if (beta <= alpha) break;
+                    }
+                    return maxEval;
+                } else {
+                    let minEval = Infinity;
+                    for (const move of orderedMoves) {
+                        const boardCopy = this.copyBoard();
+                        this.applyMove(move[0], move[1], player);
+                        
+                        const evalScore = this.minimax(depth - 1, opponent, alpha, beta, true);
+                        
+                        this.board = boardCopy;
+                        
+                        minEval = Math.min(minEval, evalScore);
+                        beta = Math.min(beta, evalScore);
+                        
+                        if (beta <= alpha) break;
+                    }
+                    return minEval;
+                }
+            }
+            
+            evaluateBoard(player) {
+                const opponent = 3 - player;
+                const emptyCells = this.board.flat().filter(c => c === 0).length;
+                
+                const playerCount = this.board.flat().filter(c => c === player).length;
+                const opponentCount = this.board.flat().filter(c => c === opponent).length;
+                
+                if (emptyCells === 0 || playerCount === 0 || opponentCount === 0) {
+                    const diff = playerCount - opponentCount;
+                    if (diff > 0) return 10000 + diff;
+                    if (diff < 0) return -10000 + diff;
+                    return 0;
+                }
+                
+                const playerMoves = this.getValidMoves(player).length;
+                const opponentMoves = this.getValidMoves(opponent).length;
+                
+                if (playerMoves === 0 && opponentMoves === 0) {
+                    const diff = playerCount - opponentCount;
+                    if (diff > 0) return 10000 + diff;
+                    if (diff < 0) return -10000 + diff;
+                    return 0;
+                }
+                
+                let score = 0;
+                
+                if (emptyCells > 15) {
+                    let posScore = 0;
+                    for (let r = 0; r < this.boardSize; r++) {
+                        for (let c = 0; c < this.boardSize; c++) {
+                            if (this.board[r][c] === player) {
+                                posScore += this.positionWeights[r][c];
+                            } else if (this.board[r][c] === opponent) {
+                                posScore -= this.positionWeights[r][c];
+                            }
+                        }
+                    }
+                    score += posScore * 2;
+                }
+                
+                const stableScore = (this.countStableDiscs(player) - 
+                                    this.countStableDiscs(opponent)) * 25;
+                score += stableScore;
+                
+                if (emptyCells > 20) {
+                    score += (playerMoves - opponentMoves) * 3;
+                } else if (emptyCells > 10) {
+                    score += (playerMoves - opponentMoves * 1.5) * 5;
+                } else {
+                    score += (playerMoves * 2 - opponentMoves) * 10;
+                }
+                
+                if (emptyCells > 15) {
+                    const playerFrontier = this.countFrontierDiscs(player);
+                    const opponentFrontier = this.countFrontierDiscs(opponent);
+                    score += (opponentFrontier - playerFrontier) * 2;
+                }
+                
+                if (emptyCells <= 10) {
+                    score += (playerCount - opponentCount) * 10;
+                }
+                
+                return Math.max(-9999, Math.min(9999, score));
+            }
+            
+            countStableDiscs(player) {
+                let stable = 0;
+                const corners = [[0,0], [0,7], [7,0], [7,7]];
+                
+                for (const [r, c] of corners) {
+                    if (this.board[r][c] === player) {
+                        stable++;
+                        
+                        if (r === 0 && c === 0) {
+                            for (let i = 1; i < 8; i++) {
+                                if (this.board[0][i] !== player) break;
+                                stable++;
+                            }
+                            for (let i = 1; i < 8; i++) {
+                                if (this.board[i][0] !== player) break;
+                                stable++;
+                            }
+                        } else if (r === 0 && c === 7) {
+                            for (let i = 6; i >= 0; i--) {
+                                if (this.board[0][i] !== player) break;
+                                stable++;
+                            }
+                            for (let i = 1; i < 8; i++) {
+                                if (this.board[i][7] !== player) break;
+                                stable++;
+                            }
+                        } else if (r === 7 && c === 0) {
+                            for (let i = 1; i < 8; i++) {
+                                if (this.board[7][i] !== player) break;
+                                stable++;
+                            }
+                            for (let i = 6; i >= 0; i--) {
+                                if (this.board[i][0] !== player) break;
+                                stable++;
+                            }
+                        } else if (r === 7 && c === 7) {
+                            for (let i = 6; i >= 0; i--) {
+                                if (this.board[7][i] !== player) break;
+                                stable++;
+                            }
+                            for (let i = 6; i >= 0; i--) {
+                                if (this.board[i][7] !== player) break;
+                                stable++;
+                            }
+                        }
+                    }
+                }
+                return stable;
+            }
+            
+            countFrontierDiscs(player) {
+                let frontier = 0;
+                const directions = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+                
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.board[row][col] === player) {
+                            for (const [dr, dc] of directions) {
+                                const nr = row + dr;
+                                const nc = col + dc;
+                                if (nr >= 0 && nr < this.boardSize && nc >= 0 && nc < this.boardSize) {
+                                    if (this.board[nr][nc] === 0) {
+                                        frontier++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return frontier;
+            }
+            
+            orderMoves(moves, player) {
+                const corners = [[0,0], [0,7], [7,0], [7,7]];
+                const cornerAdjacent = [
+                    [0,1], [1,0], [1,1],
+                    [0,6], [1,6], [1,7],
+                    [6,0], [6,1], [7,1],
+                    [6,6], [6,7], [7,6]
+                ];
+                
+                return moves.sort((a, b) => {
+                    const [ar, ac] = a;
+                    const [br, bc] = b;
+                    
+                    const aIsCorner = corners.some(([r,c]) => r === ar && c === ac);
+                    const bIsCorner = corners.some(([r,c]) => r === br && c === bc);
+                    if (aIsCorner && !bIsCorner) return -1;
+                    if (!aIsCorner && bIsCorner) return 1;
+                    
+                    const aIsEdge = ar === 0 || ar === 7 || ac === 0 || ac === 7;
+                    const bIsEdge = br === 0 || br === 7 || bc === 0 || bc === 7;
+                    
+                    if (aIsEdge && !bIsEdge) {
+                        const aIsCornerAdj = cornerAdjacent.some(([r,c]) => r === ar && c === ac);
+                        if (!aIsCornerAdj) return -1;
+                    }
+                    if (!aIsEdge && bIsEdge) {
+                        const bIsCornerAdj = cornerAdjacent.some(([r,c]) => r === br && c === bc);
+                        if (!bIsCornerAdj) return 1;
+                    }
+                    
+                    const aDist = Math.abs(ar - 3.5) + Math.abs(ac - 3.5);
+                    const bDist = Math.abs(br - 3.5) + Math.abs(bc - 3.5);
+                    return aDist - bDist;
+                });
+            }
+            
+            applyMove(row, col, player) {
+                const flipped = this.getFlippedPieces(row, col, player);
+                this.board[row][col] = player;
+                for (const [r, c] of flipped) {
+                    this.board[r][c] = player;
+                }
+            }
+            
+            isValidMove(row, col, player) {
+                if (this.board[row][col] !== 0) return false;
+                return this.getFlippedPieces(row, col, player).length > 0;
+            }
+            
+            getFlippedPieces(row, col, player) {
+                if (this.board[row][col] !== 0) return [];
+                
+                const opponent = 3 - player;
+                const flipped = [];
+                const directions = [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]];
+                
+                for (const [dr, dc] of directions) {
+                    const tempFlipped = [];
+                    let r = row + dr;
+                    let c = col + dc;
+                    
+                    while (r >= 0 && r < this.boardSize && c >= 0 && c < this.boardSize) {
+                        if (this.board[r][c] === opponent) {
+                            tempFlipped.push([r, c]);
+                        } else if (this.board[r][c] === player) {
+                            flipped.push(...tempFlipped);
+                            break;
+                        } else {
+                            break;
+                        }
+                        r += dr;
+                        c += dc;
+                    }
+                }
+                
+                return flipped;
+            }
+            
+            getValidMoves(player) {
+                const moves = [];
+                for (let row = 0; row < this.boardSize; row++) {
+                    for (let col = 0; col < this.boardSize; col++) {
+                        if (this.isValidMove(row, col, player)) {
+                            moves.push([row, col]);
+                        }
+                    }
+                }
+                return moves;
+            }
+            
+            makeMove(row, col, player) {
+                const flipped = this.getFlippedPieces(row, col, player);
+                this.board[row][col] = player;
+                
+                for (const [r, c] of flipped) {
+                    this.board[r][c] = player;
+                }
+                
+                this.currentPlayer = 3 - player;
+                this.checkGameOver();
+            }
+            
+            checkGameOver() {
+                const player1Moves = this.getValidMoves(1);
+                const player2Moves = this.getValidMoves(2);
+                
+                if (player1Moves.length === 0 && player2Moves.length === 0) {
+                    this.gameOver = true;
+                    this.drawBoard();
+                    this.updateStatus();
+                    setTimeout(() => this.showResultAndReset(), 500);
+                } else if (player1Moves.length === 0 && this.currentPlayer === 1) {
+                    this.currentPlayer = 2;
+                    this.drawBoard();
+                    this.updateStatus();
+                    if (this.cpuColor === 2) {
+                        setTimeout(() => this.cpuTurn(), 1000);
+                    }
+                } else if (player2Moves.length === 0 && this.currentPlayer === 2) {
+                    this.currentPlayer = 1;
+                    this.drawBoard();
+                    this.updateStatus();
+                    if (this.cpuColor === 1) {
+                        setTimeout(() => this.cpuTurn(), 1000);
+                    }
+                }
+            }
+            
+            showResultAndReset() {
+                // 結果表示はステータスラベルで行うので、結果ボックスは使わない
+                // ゲーム終了後も盤面はそのまま表示
+            }
+            
+            updateStatus() {
+                const blackCount = this.board.flat().filter(c => c === 1).length;
+                const whiteCount = this.board.flat().filter(c => c === 2).length;
+                
+                if (this.gameOver) {
+                    let result;
+                    if (this.playerColor === 1) {
+                        if (blackCount > whiteCount) {
+                            result = `ゲーム終了! 黒: ${blackCount} vs 白: ${whiteCount} - 🎉 あなたの勝ちです!`;
+                        } else if (whiteCount > blackCount) {
+                            result = `ゲーム終了! 黒: ${blackCount} vs 白: ${whiteCount} - CPUの勝ちです`;
+                        } else {
+                            result = `ゲーム終了! 黒: ${blackCount} vs 白: ${whiteCount} - 引き分けです`;
+                        }
+                    } else {
+                        if (whiteCount > blackCount) {
+                            result = `ゲーム終了! 黒: ${blackCount} vs 白: ${whiteCount} - 🎉 あなたの勝ちです!`;
+                        } else if (blackCount > whiteCount) {
+                            result = `ゲーム終了! 黒: ${blackCount} vs 白: ${whiteCount} - CPUの勝ちです`;
+                        } else {
+                            result = `ゲーム終了! 黒: ${blackCount} vs 白: ${whiteCount} - 引き分けです`;
+                        }
+                    }
+                    this.statusElement.textContent = result;
+                } else {
+                    const turnName = this.currentPlayer === 1 ? '黒' : '白';
+                    
+                    if (this.currentPlayer === this.playerColor) {
+                        this.statusElement.textContent = `あなた(${turnName})のターン | 黒: ${blackCount} vs 白: ${whiteCount}`;
+                    } else {
+                        this.statusElement.textContent = `CPU(${turnName})のターン | 黒: ${blackCount} vs 白: ${whiteCount}`;
+                    }
+                }
+            }
+            
+            showResult() {
+                const blackCount = this.board.flat().filter(c => c === 1).length;
+                const whiteCount = this.board.flat().filter(c => c === 2).length;
+                
+                let result, resultClass;
+                if (this.playerColor === 1) {
+                    if (blackCount > whiteCount) {
+                        result = `🎉 あなたの勝ちです! 黒: ${blackCount} vs 白: ${whiteCount}`;
+                        resultClass = 'win';
+                    } else if (whiteCount > blackCount) {
+                        result = `CPUの勝ちです! 黒: ${blackCount} vs 白: ${whiteCount}`;
+                        resultClass = 'lose';
+                    } else {
+                        result = `引き分けです! 黒: ${blackCount} vs 白: ${whiteCount}`;
+                        resultClass = 'draw';
+                    }
+                } else {
+                    if (whiteCount > blackCount) {
+                        result = `🎉 あなたの勝ちです! 黒: ${blackCount} vs 白: ${whiteCount}`;
+                        resultClass = 'win';
+                    } else if (blackCount > whiteCount) {
+                        result = `CPUの勝ちです! 黒: ${blackCount} vs 白: ${whiteCount}`;
+                        resultClass = 'lose';
+                    } else {
+                        result = `引き分けです! 黒: ${blackCount} vs 白: ${whiteCount}`;
+                        resultClass = 'draw';
+                    }
+                }
+                
+                this.resultElement.textContent = result;
+                this.resultElement.className = `result ${resultClass}`;
+            }
+            
+            copyBoard() {
+                return this.board.map(row => [...row]);
+            }
+            
+            getBoardHash() {
+                return this.board.map(row => row.join('')).join('|');
+            }
+        }
+        
+        // ゲーム開始
+        document.addEventListener('DOMContentLoaded', () => {
+            new OthelloGame();
+        });
+    </script>
+</body>
+</html>
