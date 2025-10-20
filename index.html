@@ -14,41 +14,43 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 10px;
+            padding: 5px;
         }
 
         .container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 20px;
+            padding: 12px;
             max-width: 600px;
             width: 100%;
+            max-height: 98dvh;
+            overflow-y: auto;
         }
 
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 15px;
-            font-size: 20px;
+            margin-bottom: 8px;
+            font-size: 18px;
         }
 
         .settings {
             background: #f8f9fa;
-            padding: 15px;
+            padding: 10px;
             border-radius: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
 
         .setting-row {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
 
         .setting-row:last-child {
@@ -58,7 +60,7 @@
         .setting-label {
             font-weight: 600;
             color: #555;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .setting-options {
@@ -77,14 +79,14 @@
             align-items: center;
             gap: 5px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         select {
-            padding: 8px 12px;
+            padding: 6px 10px;
             border: 2px solid #ddd;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             background: white;
             cursor: pointer;
         }
@@ -95,19 +97,19 @@
             gap: 8px;
             cursor: pointer;
             font-weight: 500;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .buttons {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 15px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
 
         button {
-            padding: 12px 20px;
-            font-size: 16px;
+            padding: 10px 16px;
+            font-size: 14px;
             font-weight: 600;
             border: none;
             border-radius: 8px;
@@ -153,24 +155,24 @@
 
         .status {
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 6px;
+            font-size: 13px;
             font-weight: 600;
             color: #333;
         }
 
         .ai-status {
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 12px;
+            margin-bottom: 8px;
+            font-size: 11px;
             color: #2196F3;
-            min-height: 20px;
+            min-height: 18px;
         }
 
         .board-container {
             display: inline-block;
             background: #1a7a3e;
-            padding: 8px;
+            padding: 6px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
@@ -245,9 +247,9 @@
         .labels {
             display: flex;
             justify-content: center;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             gap: 1px;
-            padding-left: 8px;
+            padding-left: 6px;
         }
 
         .label {
@@ -255,14 +257,14 @@
             text-align: center;
             font-weight: bold;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         .row-labels {
             display: flex;
             flex-direction: column;
             gap: 1px;
-            margin-right: 5px;
+            margin-right: 4px;
         }
 
         .row-label {
@@ -272,8 +274,8 @@
             justify-content: center;
             font-weight: bold;
             color: white;
-            font-size: 12px;
-            width: 20px;
+            font-size: 11px;
+            width: 18px;
         }
 
         .board-with-labels {
@@ -285,13 +287,14 @@
         }
 
         #depthWarning {
-            font-size: 11px;
+            font-size: 10px;
             color: #666;
         }
 
         @media (min-width: 480px) {
             .container {
                 padding: 25px;
+                max-height: 95dvh;
             }
 
             h1 {
@@ -453,7 +456,7 @@
         <div class="board-wrapper">
             <div class="board-container">
                 <div class="labels">
-                    <div style="width: 20px;"></div>
+                    <div style="width: 18px;"></div>
                     <div class="label">A</div>
                     <div class="label">B</div>
                     <div class="label">C</div>
