@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オセロ講座と練習問題 — オセロ 弐</title>
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <h1>オセロ<span>講座</span></h1>
+    <nav><a href="index.html">対局する</a><a href="about.html">AIのしくみ</a></nav>
+  </header>
+
+  <p class="lead">強くなるための基本原則を、短い説明と「次の一手」問題でたどります。問題はこのアプリのAI同士の対局から抜き出したもので、全部の手をAIが採点済みです（終盤は完全読み、中盤は6手読み）。対局画面の「解説」に出る用語は、ここの各項目にリンクしています。</p>
+  <p class="src">章立ては日本オセロ連盟系サイト Othello! JAPAN の<a href="https://www.othello.org/lesson/lesson/" target="_blank" rel="noopener">「初心者のためのオセロ講座」</a>に沿っています。本文・図・問題はこのアプリ用に書き下ろしたもので、本家の文章や図の転載ではありません。各章の末尾に本家の該当ページへのリンクを置いたので、詳しい解説はそちらを読んでください。</p>
+
+  <ul class="toc">
+    <li><a href="#terms">0. マスの呼び名</a></li>
+    <li><a href="#basics">1. 基礎</a></li>
+    <li><a href="#mid">2. 中盤戦術</a></li>
+    <li><a href="#edge">3. 辺の形</a></li>
+    <li><a href="#edgeplay">4. 辺回りの打ち方</a></li>
+    <li><a href="#end">5. 終盤</a></li>
+  </ul>
+
+  <h2 id="terms">0. マスの呼び名</h2>
+  <p>マスは列を a〜h、行を 1〜8 で呼びます（左上が a1）。辺と隅のまわりには特別な呼び名があります。</p>
+  <div class="figs"><figure><div class="mini" data-fig="names"></div><figcaption>隅、その隣の <b>C</b>、斜め隣の <b>X</b>、辺の <b>A</b>・<b>B</b>。内側の4×4（c3〜f6）を「ボックス」、辺の1つ内側の列を「中辺」と呼びます。</figcaption></figure></div>
+  <p class="src">本家: <a href="https://www.othello.org/lesson/lesson/term.html" target="_blank" rel="noopener">オセロ用語の基礎知識</a></p>
+
+  <h2 id="basics">1. 基礎</h2>
+
+  <h3 id="basics-corner">隅は大切</h3>
+  <p>隅の石は挟まれないので、一度取れば最後まで自分の石です。さらに隅から辺に沿って並んだ石も返されなくなります。こうした「もう返されない石」を<b>確定石</b>と呼びます。</p>
+  <div class="key">隅が取れるなら、まず取ることを考える。相手に隅を与える手は、よほどの理由がない限り打たない。</div>
+  <div class="quiz" data-quiz="basics-corner"></div>
+
+  <h3 id="basics-cx">Cは危険、Xは論外</h3>
+  <p>隅を取られるのは、ほとんどの場合、隅の隣（C）か斜め隣（X）に自分の石があるときです。特に X は、対角線上の石がそろうだけで隅を取られるので、序中盤に自分から打つのは最も危ない手です。C は辺の並び方しだいで安全にも危険にもなります。</p>
+  <div class="key">隅が空いているうちは、X には打たない。C は辺の形を見てから。</div>
+  <p>下の問題には、打てる X があります。X 以外のどこが良いかを探してください。</p>
+  <div class="quiz" data-quiz="basics-cx"></div>
+
+  <h3 id="basics-fewer">石の多い方が不利</h3>
+  <p>勝敗は最後の石数で決まりますが、途中の石数は関係ありません。むしろ序盤・中盤で石をたくさん返すと、自分の石が盤の外側に並び、相手の打てる所が増えて自分の打てる所が減ります。序中盤は「少なく返す」「内側の石を返す」のが基本です。</p>
+
+  <h3 id="basics-mobility">重要なのは打てる箇所の数</h3>
+  <p>オセロはパスができないゲームです。打てる所が少ない側は、X打ちのような悪い手を「打たされる」ことになります。だから中盤の目標は石数ではなく、<b>相手の打てる所を減らし、自分の打てる所を残す</b>ことです。</p>
+  <div class="key">良い手とは、相手の選択肢を減らす手。打った後に相手がどこに打てるかを数える習慣をつける。</div>
+  <div class="quiz" data-quiz="basics-mobility"></div>
+  <p class="src">本家: <a href="https://www.othello.org/lesson/lesson/general.html" target="_blank" rel="noopener">オセロの基礎</a></p>
+
+  <h2 id="mid">2. 中盤戦術</h2>
+
+  <h3 id="mid-nakawari">中割り（なかわり）</h3>
+  <p>返す石が、まわりを全部ほかの石に囲まれている（空きマスに接していない）手を中割りと呼びます。外側に自分の石が顔を出さないので、相手の打てる所が増えません。</p>
+  <p>手の良し悪しを測る目安が<b>開放度</b>です。返す石のまわりにある空きマスの数を合計したもので、小さいほど良い手とされます。開放度 0 が中割りです。逆に外側の石をたくさん返すと「壁」ができ、相手だけが打ちやすくなります。</p>
+  <div class="key">返す石のまわりの空きマスを数える。少ない手ほど、相手に手を与えない。</div>
+  <div class="quiz" data-quiz="mid-nakawari"></div>
+  <p>相手が中割りを打てそうな所は、先に打つ・形を変えるなどして消しておくのも大事な考え方です（中割りを作る・消すの応酬）。</p>
+
+  <h3 id="mid-isseki">一石返し</h3>
+  <p>1個だけ返す手です。盤面の変化が小さいので、自分の打てる所を温存したまま相手に手番を回せます。中割りが見つからないときの有力な候補です。</p>
+  <div class="quiz" data-quiz="mid-isseki"></div>
+
+  <h3 id="mid-tempo">手を稼ぐ・手を渡す・手得／手損</h3>
+  <p><b>手を稼ぐ</b>とは、自分だけが打てる所（相手は打てない所）を作って、打つ手に困らないようにすることです。<b>手を渡す</b>とは、局面をほとんど変えない手を打って「次に困るのは相手」という状況にすることです。同じ場所で自分が何手打ち、相手が何手打ったかを比べたものが<b>手得／手損</b>で、中盤は1手の得が勝敗を分けます。</p>
+  <p>究極の「手を稼ぐ」は、相手をパスさせて連続で打つことです。</p>
+  <div class="quiz" data-quiz="mid-tempo"></div>
+  <p class="src">本家: <a href="https://www.othello.org/lesson/lesson/mid1.html" target="_blank" rel="noopener">オセロの中盤戦術</a></p>
+
+  <h2 id="edge">3. 辺の形</h2>
+  <p>辺の石は一度並ぶと動かしにくいので、形の良し悪しが終盤まで響きます。両隅が空いているときの代表的な形を3つ覚えましょう。</p>
+  <div class="figs">
+    <figure><div class="mini" data-fig="wing"></div><figcaption id="edge-wing"><b>ウィング（悪形）</b> 片側に寄った5個並び。空いている C に相手が入ると、隅を取られやすくなります。</figcaption></figure>
+    <figure><div class="mini" data-fig="yama"></div><figcaption id="edge-yama"><b>山（良形）</b> b〜g の6個並び。相手は C に入れず、隅を取られにくい安定した形です。</figcaption></figure>
+    <figure><div class="mini" data-fig="block"></div><figcaption id="edge-block"><b>ブロック（普通）</b> 中央の4個並び。悪くはありませんが、隣の辺の形しだいで弱点になります。</figcaption></figure>
+  </div>
+  <div class="key">辺を取るときは、取った後の形を考える。ウィングになる取り方は避け、山を目指す。</div>
+  <p>辺の形ではこのほか、X打ちの後に相手に隅とCを続けて打たれる<b>連打</b>の危険、それを防ぐ<b>爆弾</b>という形、両者がCに打ち合った<b>双方C打ち形</b>などが重要です。図がないと分かりにくいので、本家の解説を読んでください。</p>
+  <p class="src">本家: <a href="https://www.othello.org/lesson/lesson/mid2.html" target="_blank" rel="noopener">オセロの中盤戦術〜辺の形</a></p>
+
+  <h2 id="edgeplay">4. 辺回りの打ち方</h2>
+  <h3 id="edge-play">辺への下り方と手筋</h3>
+  <table>
+    <tr><th>用語</th><th>意味</th></tr>
+    <tr><td>A打ち・B打ち</td><td>中辺から辺へ下りるとき、A のマスに打つか B のマスに打つか。同じ形でも、黒はA打ちが良く白はB打ちが良い、というように立場で変わります。</td></tr>
+    <tr><td>置き打ち</td><td>辺に打つとき、隣の中辺にある相手の石を返さずに済む手。後でその隣（C）に自分だけが打てる「権利の手」が残り、手を稼げます。</td></tr>
+    <tr><td>付け手</td><td>相手が辺に打った石のすぐ隣に打つ手。相手に辺を取らせる代わりに、同じ辺で一方的に何手も打たれる手損を防ぎます。</td></tr>
+  </table>
+  <p><b>辺は取るべきか、取らせるべきか。</b>辺を取ると石が増え、形が悪いと隅の危険も増えます。一方で相手に取らせると、相手の石が外に出て自分の打てる所が増えることがあります。「辺を取った後に相手がどう付けてくるか」まで考えてから打つのが基本です。</p>
+  <p class="src">本家: <a href="https://www.othello.org/lesson/lesson/mid3.html" target="_blank" rel="noopener">オセロの中盤戦術〜辺回りの打ち方</a></p>
+
+  <h2 id="end">5. 終盤</h2>
+
+  <h3 id="end-count">基本は「数える」</h3>
+  <p>残りが数マスになったら、原則ではなく実際に数えます。「ここに打つと何個返り、相手がここに打つと何個返され…」と最後まで追い、最終の石数を比べます。3個空きなら読む筋は多くても6通りです。</p>
+  <div class="quiz" data-quiz="end-count"></div>
+
+  <h3 id="end-temadomari">手止まり</h3>
+  <p>ある空き場所（ひとかたまりの空きマス）に最後に打つ手を手止まりと呼びます。最後に打った側は、その後そこで石を返されません。終盤は「各所の手止まりをどちらが打つか」の争いです。</p>
+  <div class="quiz" data-quiz="end-temadomari"></div>
+
+  <h3 id="end-parity">偶数理論</h3>
+  <p>空きマスが偶数個のかたまりは、自分が打てば相手が打ち、最後（手止まり）は相手になります。奇数個のかたまりは、先に打った側が最後も打てます。そこで、</p>
+  <div class="key">奇数個の空きに先に打って偶数にする。偶数個の空きには自分からは打たず、相手に先に打たせる。</div>
+  <p>これが偶数理論です。盤全体の空きは普通は偶数なので、後手（白）がもともと有利で、黒はパスを絡めて奇数空きを作る工夫（奇数理論）が必要になります。</p>
+  <div class="quiz" data-quiz="end-parity"></div>
+  <p class="src">本家: <a href="https://www.othello.org/lesson/lesson/endgame.html" target="_blank" rel="noopener">オセロの終盤戦術〜偶数理論</a></p>
+
+  <h2>次の一歩</h2>
+  <p><a href="index.html">対局画面</a>で「解説」をオンにして打つと、1手ごとに「あなたの手は好手か緩手か」「AIの最善手にはどんな特徴があったか」が出ます。終わった対局は棋譜の ◀ ▶ で見返せます。AIがどう考えているかは<a href="about.html">AIのしくみ</a>へ。</p>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/explain.js"></script>
+<script src="js/lesson_data.js"></script>
+<script src="js/lessons.js"></script>
+</body>
+</html>

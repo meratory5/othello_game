@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIのしくみ — オセロ 弐</title>
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <h1>AIの<span>しくみ</span></h1>
+    <nav><a href="index.html">対局する</a><a href="lessons.html">オセロ講座</a></nav>
+  </header>
+  <p class="lead">このアプリのAIは「局面に点数をつける評価関数」と「先を読む探索」の2つでできています。GPUもニューラルネットも使っていません。どちらも、紙と鉛筆で追える程度に単純な仕組みの積み重ねです。</p>
+
+  <h2>1. 評価関数 — 形の点数表を足すだけ</h2>
+  <p>評価関数は、局面を見て「このまま進むと最終的に何石差になりそうか」を答える関数です。式はこれだけです。</p>
+  <pre><code>評価値（石差の予想） ＝ ( Σ 46個のパターンの点数  ＋  打てる箇所数の点数 ) ÷ 8</code></pre>
+  <p>「パターン」とは盤の一部分の決まった形のことで、次の11種類・合計46か所を見ます（同じ種類は盤の回転・裏返しで重なる位置にあります）。</p>
+  <table>
+    <tr><th>種類</th><th>マス数</th><th>か所</th><th>並び方の数</th></tr>
+    <tr><td>辺＋X（辺8マスと両端のX）</td><td>10</td><td>4</td><td>59,049</td></tr>
+    <tr><td>隅の3×3</td><td>9</td><td>4</td><td>19,683</td></tr>
+    <tr><td>隅の2×5</td><td>10</td><td>8</td><td>59,049</td></tr>
+    <tr><td>2・3・4列目の縦横</td><td>8</td><td>各4</td><td>各6,561</td></tr>
+    <tr><td>斜め（長さ8・7・6・5・4）</td><td>8〜4</td><td>2・4・4・4・4</td><td>6,561〜81</td></tr>
+  </table>
+  <p>各マスは「空き・自分・相手」の3通りなので、10マスのパターンなら 3<sup>10</sup> ＝ 59,049 通りの並び方があります。AIはその<b>全部の並び方に対する点数表</b>を持っていて、いまの盤面の並びを3進数の番号に直し、表を引くだけです。</p>
+  <pre><code>番号 ＝ マス1 × 1 ＋ マス2 × 3 ＋ マス3 × 9 ＋ …   （空き=0、自分=1、相手=2）
+点数 ＝ 表[ゲームの進み具合][番号]</code></pre>
+  <p>表は石数6個ごとに10段階（序盤用〜終盤用）に分かれています。同じ形でも序盤と終盤で価値が違うからです。</p>
+
+  <div class="demo">
+    <p><b>試してみる: 辺の点数表を引く</b>　下は上辺の8マスです。マスを押すと 空き → 黒（自分）→ 白（相手）と変わります。X（b2, g2）は空きとして計算します。</p>
+    <div class="row">
+      <div>
+        <div class="edge" id="edge"></div>
+        <div style="margin-top:8px">
+          <button class="btn" data-p="01111110">山</button><button class="btn" data-p="01111100">ウィング</button><button class="btn" data-p="00111100">ブロック</button><button class="btn" data-p="11111111">全部とった</button><button class="btn" data-p="12222220">隅＋相手の列</button><button class="btn" data-p="00000000">空</button>
+        </div>
+        <label style="font-size:13px;display:block;margin-top:10px">ゲームの進み具合: <input type="range" id="stage" min="0" max="9" value="4"> <span id="stageOut"></span></label>
+      </div>
+      <div>
+        <div class="src">3進数の番号</div><div class="big" id="idx">—</div>
+        <div class="src">この形の点数（黒から見た石差への寄与）</div><div class="big" id="val">—</div>
+        <div class="src" id="note"></div>
+      </div>
+    </div>
+  </div>
+  <p>山とウィングを比べたり、隅を取った形を作ったりしてみてください。<a href="lessons.html#edge">講座の「辺の形」</a>で教わる良形・悪形を、AIは誰にも教わらずに点数として持っています。対局画面の「評価の内訳（AIの目）」では、いまの局面でどの種類の形が何石ぶん効いているかを見られます。</p>
+
+  <h2>2. 点数表はどう作ったか — 機械学習</h2>
+  <p>点数表の中身（約167万個 × 10段階）は人が決めたのではなく、対局データから求めました。</p>
+  <ol>
+    <li>AI同士で38万局打たせ、出てきた約1,930万局面それぞれに「その対局は最終的に何石差で終わったか」を記録する。</li>
+    <li>各局面について <code>46個の点数の合計</code> が <code>実際の最終石差</code> に近づくよう、関係した表のマスを少しずつ増減する（最小二乗法）。これを全局面で数百回繰り返す。</li>
+    <li>できた表を使ってAIを強くし、その強いAIでまた対局データを作り直す。これを3世代。</li>
+  </ol>
+  <p>式が「足し算だけ」なので、学習は普通のCPUで数分で終わります。ある形が勝ちにつながる局面に多く現れれば点数が上がり、負けにつながる局面に多ければ下がる、というだけの素朴な統計です。この方式は1990年代のオセロAI「Logistello」が確立したもので、人間の世界チャンピオンを破ったのもこの系統です。</p>
+  <p>弱点もあります。表は形を別々に見ているので、「この形とあの形が同時にあるとまずい」といった組み合わせは表現できません。そこを補うのが次の「読み」です。</p>
+
+  <h2>3. 探索 — 先を読む</h2>
+  <p>評価関数だけで打つと1手先しか見ていないのと同じです。実際には「自分がここ、相手がここ、自分が…」と数手先まで全部たどり、たどり着いた局面を評価関数で採点して、<b>相手が最善を尽くしても一番良くなる手</b>を選びます（ミニマックス法）。</p>
+  <p>ただし素直にやると局面の数が爆発します。1手に平均10通りあるとして10手先は100億局面です。これを現実的な数に減らす工夫が探索アルゴリズムの面白いところです。</p>
+  <table>
+    <tr><th>工夫</th><th>何をしているか</th></tr>
+    <tr><td>αβ枝刈り</td><td>「この手は、すでに見つけた手より悪いと分かった」時点で残りを読まない。結果は全部読んだ場合と完全に同じなのに、読む量は平方根くらいまで減ります。</td></tr>
+    <tr><td>手の並び替え</td><td>枝刈りは良い手を先に読むほど効くので、「相手の打てる所が少なくなる手」や浅く読んで良かった手から先に調べます。</td></tr>
+    <tr><td>PVS（NegaScout）</td><td>最初の手だけ普通に読み、残りは「最初の手より良いか？」だけを確かめる軽い読みで済ませます。</td></tr>
+    <tr><td>反復深化</td><td>1手読み、2手読み、3手読み…と深くしていきます。無駄に見えますが、浅い読みの結果が次の並び替えに使えるので、かえって速くなります。時間切れでも直前の結果が残ります。</td></tr>
+    <tr><td>置換表</td><td>手順が違っても同じ局面になることは多いので、一度読んだ局面の結果を覚えておいて使い回します。</td></tr>
+    <tr><td>ビットボード</td><td>盤面を64ビットの数2つ（自分の石・相手の石）で持ち、打てる所や返る石をビット演算でまとめて求めます。1マスずつ調べるより桁違いに速くなります。</td></tr>
+  </table>
+  <p>これらを合わせて、最強レベルは中盤で1秒に数十万〜百万局面を読み、10〜14手先まで見ています。</p>
+
+  <h2>4. 終盤 — 読み切る</h2>
+  <p>残りマスが少なくなると、評価関数を使わずに<b>終局まで全部読む</b>ことができます。こうなるとAIの手は「たぶん良い手」ではなく「証明された最善手」です。最強レベルは残り18手から最終石差を、残り20手から勝ち負けを読み切ります。この部分は1秒に1,000万局面以上の速さで読んでいます。形勢メーターの表示が「読み切り」に変わったら、その数字は確定した結果です。</p>
+
+  <h2>5. 序盤 — 定石ブック</h2>
+  <p>序盤は先が長すぎて読みが効きにくいので、あらかじめ深く調べておいた約14,000局面の「定石ブック」から手を選びます。作り方は、初手から「双方の悪手の合計が6石以内」に収まる変化を全部たどり、末端の局面を深く読んで、その結果を根元に向かって伝えていく、というものです。</p>
+
+  <h2>6. 弱いレベルはどう作っているか</h2>
+  <p>強さを下げるのに「たまにデタラメを打つ」方式だと、不自然で練習になりません。このアプリでは、浅く読んだ各候補手の評価値に<b>乱数（正規分布のゆらぎ）を足してから</b>一番良い手を選びます。大差で良い手（隅が取れる等）は見逃しにくく、僅差の判断ほど間違える、という人間らしい弱さになります。ゆらぎの大きさと読みの深さを、レベル同士を何百局も対戦させて、隣のレベルとの勝率がそろうように調整しました。</p>
+
+  <h2>7. 「解説」は何をしているか</h2>
+  <p>対局画面の解説に出る「中割り」「相手の打てる箇所を減らす」などの言葉は、AIが考えた理由そのものではありません。AIは上のとおり点数表と読みで手を決めていて、言葉では考えていません。解説は、選ばれた手が盤上で何をしたか（返した石のまわりの空き、相手の打てる所の増減、隅や辺の形、空きマスの偶奇）を別のプログラムで調べ、<a href="lessons.html">講座</a>の原則に当てはめて説明したものです。強い手はたいてい原則どおりなので役に立ちますが、原則に反して見える最善手もあります。そのときは読みのほうが正しいことが多く、それが上達の次の段階の題材になります。</p>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/weights.js"></script>
+<script>
+(function () {
+  'use strict';
+  const E = OthelloEngineFactory();
+  const $ = (id) => document.getElementById(id);
+  const state = [0, 1, 1, 1, 1, 1, 1, 0];
+  let W = null;
+  const edge = $('edge'), btns = [];
+  for (let i = 0; i < 8; i++) {
+    const b = document.createElement('button'); b.type = 'button';
+    b.setAttribute('aria-label', 'abcdefgh'[i] + '1');
+    b.addEventListener('click', () => { state[i] = (state[i] + 1) % 3; draw(); });
+    edge.appendChild(b); btns.push(b);
+  }
+  document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => { [...b.dataset.p].forEach((ch, i) => { state[i] = +ch; }); draw(); }));
+  $('stage').addEventListener('input', draw);
+  function draw() {
+    state.forEach((v, i) => { btns[i].innerHTML = v ? '<span class="d ' + (v === 1 ? 'b' : 'w') + '"></span>' : ''; });
+    let idx = 0;
+    for (let k = 0; k < 8; k++) idx += state[k] * Math.pow(3, k);       // the two X squares (digits 8, 9) are empty
+    const st = +$('stage').value;
+    $('stageOut').textContent = '第' + (st + 1) + '段階（石数 ' + (4 + st * 6) + '〜' + Math.min(64, 9 + st * 6) + '）';
+    $('idx').textContent = state.join(' ') + ' → ' + idx;
+    if (!W) { $('val').textContent = '読み込み中…'; return; }
+    const v = W[st * E.STAGE_SIZE + E.PATTERNS[0].off + idx] / E.EVAL_UNIT;
+    $('val').textContent = (v > 0 ? '+' : '') + v.toFixed(2) + ' 石';
+    $('note').textContent = v === 0 ? '0 は「学習データにほとんど出てこなかった形」のことが多いです。' : v > 0 ? '黒にとって得な形と学習されています。' : '黒にとって損な形と学習されています。';
+  }
+  draw();
+  if (typeof OTHELLO_WEIGHTS !== 'undefined' && typeof DecompressionStream !== 'undefined') {
+    const stream = new Blob([E.b64ToBytes(OTHELLO_WEIGHTS)]).stream().pipeThrough(new DecompressionStream('gzip'));
+    new Response(stream).arrayBuffer().then((b) => { W = new Int8Array(b); draw(); });
+  }
+})();
+</script>
+</body>
+</html>
