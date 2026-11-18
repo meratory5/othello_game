@@ -36,6 +36,8 @@ body {
 .masthead { grid-area: head; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
 h1 { font-family: var(--serif); font-weight: 600; font-size: 28px; letter-spacing: .12em; }
 h1 .ni { color: var(--gold); font-size: 1.15em; }
+h1 a { color: inherit; text-decoration: none; }
+h1 a:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
 .tagline { color: var(--muted); font-size: 13px; letter-spacing: .08em; }
 
 .table { grid-area: table; width: 100%; max-width: 540px; min-width: 0; }
@@ -62,24 +64,35 @@ h1 .ni { color: var(--gold); font-size: 1.15em; }
 .files span { flex: 1; text-align: center; }
 .ranks { left: 0; top: 22px; bottom: 22px; width: 22px; flex-direction: column; }
 .ranks span { flex: 1; display: grid; place-items: center; }
+/* The board width is snapped to a multiple of 8px and the grid lines are cell borders, so every
+   line is exactly 1px (a fractional cell size makes browsers draw lines of uneven thickness). */
 .board {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
+  box-sizing: content-box;
+  width: 100%;
+  width: round(down, 100%, 8px);
+  margin: 0 auto;
   aspect-ratio: 1;
-  background: var(--felt-dark);
-  gap: 1px;
+  background: var(--felt);
   border: 1px solid #0c2b1d;
 }
 .cell {
   position: relative;
   background: var(--felt);
   border: 0;
+  border-right: 1px solid var(--felt-dark);
+  border-bottom: 1px solid var(--felt-dark);
   display: grid;
   place-items: center;
   aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
   cursor: default;
   -webkit-tap-highlight-color: transparent;
 }
+.cell:nth-child(8n) { border-right: 0; }
+.cell:nth-child(n+57) { border-bottom: 0; }
 .cell.legal { cursor: pointer; }
 .cell.legal::after { content: ""; width: 18%; height: 18%; border-radius: 50%; background: rgba(215, 178, 90, .75); }
 .cell.legal:hover::after, .cell.legal:focus-visible::after { width: 70%; height: 70%; background: rgba(215, 178, 90, .25); outline: 1px solid var(--gold); }
@@ -110,7 +123,7 @@ h1 .ni { color: var(--gold); font-size: 1.15em; }
 
 .panel { grid-area: panel; display: grid; gap: 16px; }
 .group { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 16px; background: var(--ink-2); }
-legend, .group h2 { font-family: var(--serif); font-size: 15px; font-weight: 600; letter-spacing: .1em; padding: 0 6px; color: var(--gold); }
+.group h2 { font-family: var(--serif); font-size: 15px; font-weight: 600; letter-spacing: .1em; padding: 0 6px; color: var(--gold); }
 .group h2 { padding: 0; margin-bottom: 8px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .opening { font-family: var(--sans); font-size: 12px; color: var(--text); letter-spacing: 0; }
 .row { margin-top: 12px; }
@@ -121,11 +134,18 @@ legend, .group h2 { font-family: var(--serif); font-size: 15px; font-weight: 600
 .seg span { display: block; text-align: center; padding: 8px 6px; font-size: 14px; cursor: pointer; }
 .seg input:checked + span { background: var(--ink-3); color: var(--gold); }
 .seg input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: -2px; }
-input[type=range] { width: 100%; accent-color: var(--gold); }
+.levels { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.levels button { font: inherit; font-family: var(--serif); font-size: 15px; padding: 7px 0; color: var(--text); background: var(--ink-3); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.levels button:hover:not(:disabled) { border-color: var(--gold-dim); }
+.levels button[aria-checked=true] { background: var(--gold); color: #1a1407; border-color: var(--gold); font-weight: 700; }
+.levels button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.level-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 3px; }
+#settings.locked .seg, #settings.locked .levels, #settings.locked .level-scale, #settings.locked .level-desc { opacity: .5; }
+#settings.locked .seg span, #settings.locked .levels button { cursor: not-allowed; }
 .level-desc { font-size: 12px; color: var(--muted); min-height: 3em; margin-top: 4px; }
 .checks { display: grid; gap: 6px; font-size: 13px; }
 .checks input { accent-color: var(--gold); margin-right: 6px; }
-fieldset:disabled { opacity: .55; }
+
 .actions { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; }
 .btn { font: inherit; font-size: 14px; color: var(--text); background: var(--ink-3); border: 1px solid var(--line); padding: 10px 8px; border-radius: 8px; cursor: pointer; transition: background .15s, border-color .15s; }
 .btn:hover:not(:disabled) { border-color: var(--gold-dim); }

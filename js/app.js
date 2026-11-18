@@ -212,7 +212,7 @@
     { name: '内側の縦横の列', hint: '2〜4列目 ×12', pats: [1, 2, 3] },
     { name: '斜めの列', hint: '長さ4〜8 ×18', pats: [4, 5, 6, 7, 8] },
   ];
-  let evalSel = -1;
+  let evalSel = -1, evalSelTimer = 0;      // row whose strongest pattern is outlined on the board (temporary)
   function renderEval() {
     const box = $('evalBox');
     cells.forEach(c => c.classList.remove('pat'));
@@ -235,9 +235,22 @@
         '<span class="bar"><i class="' + (r.v >= 0 ? 'pos' : 'neg') + '" style="width:' + (Math.abs(r.v) / max * 50).toFixed(1) + '%"></i></span>' +
         '<span class="num">' + fmt(r.v) + '</span></button>').join('') + '</div>' +
       '<p class="eval-total"><span>合計（読みなしの静的評価・第' + (bd.stage + 1) + '段階の表）</span><b>' + fmt(sign * bd.total) + '</b></p>' +
-      '<p class="eval-note">行を押すと、その種類で最も点数の動いている形を盤上に示します。実際の着手は、この評価を数手〜十数手先の局面に当てはめて読んだ結果で決まります。<a href="about.html">しくみの解説</a></p>';
+      '<p class="eval-note">行にマウスを乗せる（スマホは押す）と、その種類で最も点数の動いている形を盤上に少しの間だけ示します。実際の着手は、この評価を数手〜十数手先の局面に当てはめて読んだ結果で決まります。<a href="about.html">しくみの解説</a></p>';
     if (evalSel >= 0 && rows[evalSel] && rows[evalSel].top) for (const s of rows[evalSel].top.sq) cells[s].classList.add('pat');
-    $('evalBody').querySelectorAll('.eval-row').forEach(b => b.addEventListener('click', () => { evalSel = evalSel === +b.dataset.i ? -1 : +b.dataset.i; renderEval(); }));
+    const mark = (i) => {
+      cells.forEach(c => c.classList.remove('pat'));
+      $('evalBody').querySelectorAll('.eval-row').forEach((b, k) => b.classList.toggle('sel', k === i));
+      if (i >= 0 && rows[i] && rows[i].top) for (const s of rows[i].top.sq) cells[s].classList.add('pat');
+    };
+    $('evalBody').querySelectorAll('.eval-row').forEach((b) => {
+      const i = +b.dataset.i;
+      b.addEventListener('mouseenter', () => { clearTimeout(evalSelTimer); evalSel = i; mark(i); });
+      b.addEventListener('mouseleave', () => { evalSel = -1; mark(-1); });
+      b.addEventListener('click', () => {           // touch: show for a moment, then clear by itself
+        clearTimeout(evalSelTimer); evalSel = i; mark(i);
+        evalSelTimer = setTimeout(() => { evalSel = -1; mark(-1); }, 2500);
+      });
+    });
   }
   $('evalBox').addEventListener('toggle', () => renderEval());
   // the main thread needs its own copy of the weights for the breakdown
@@ -306,7 +319,7 @@
 
   // ---- game flow
   function pushMove(sq) {
-    viewIdx = null;
+    viewIdx = null; evalSel = -1;
     const st = cur();
     hist.push({ pos: E.play(st.pos, sq), black: !st.black, move: sq });
     hintSq = -1;
@@ -362,7 +375,8 @@
     setRunningUI(false);
   }
   function setRunningUI(on) {
-    $('settings').disabled = on;
+    $('settings').classList.toggle('locked', on);
+    document.querySelectorAll('input[name=color], #levels button').forEach((el) => { el.disabled = on; });
     const b = $('start');
     b.textContent = on ? '中断' : '対局開始';
     b.classList.toggle('stop', on);
@@ -370,7 +384,7 @@
   function start() {
     ai.cancel(); stopPlay(); viewIdx = null; loaded = false;
     playerBlack = document.querySelector('input[name=color]:checked').value === 'black';
-    level = +$('level').value;
+    level = levelSel;
     hist = [{ pos: E.initialPosition(), black: true, move: null }];
     running = true; over = false; thinking = false; hintSq = -1; evalBlack = null; prevCells = null;
     clearCoach();
@@ -433,19 +447,41 @@
   });
   document.addEventListener('keydown', (e) => {
     if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) && e.target.type !== 'range' && e.target.type !== 'checkbox' && e.target.type !== 'radio') return;
-    if (e.target && e.target.type === 'range') return;
     if (e.key === 'ArrowLeft') { stopPlay(); goTo(shownIdx() - 1); }
     else if (e.key === 'ArrowRight') { stopPlay(); goTo(shownIdx() + 1); }
   });
   $('showMoves').addEventListener('change', render);
   $('showEval').addEventListener('change', render);
   $('showCoach').addEventListener('change', () => { $('coachBox').classList.toggle('off', !coachOn()); });
-  const lv = $('level');
-  function showLevel() { $('levelOut').textContent = lv.value; $('levelDesc').textContent = LEVEL_DESC[lv.value - 1]; }
-  lv.addEventListener('input', showLevel);
-  try { const saved = localStorage.getItem('othello2.level'); if (saved) lv.value = saved; } catch (e) { /* storage unavailable */ }
-  lv.addEventListener('change', () => { try { localStorage.setItem('othello2.level', lv.value); } catch (e) { /* ignore */ } });
+  // strength: ten discrete buttons (a slider gives no targets for a value that is not continuous)
+  let levelSel = 5;
+  try { const saved = +localStorage.getItem('othello2.level'); if (saved >= 1 && saved <= 10) levelSel = saved; } catch (e) { /* storage unavailable */ }
+  const levelBtns = [];
+  for (let n = 1; n <= 10; n++) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = n; b.setAttribute('role', 'radio'); b.title = LEVEL_DESC[n - 1];
+    b.addEventListener('click', () => setLevel(n));
+    b.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault(); e.stopPropagation();
+      setLevel(Math.max(1, Math.min(10, levelSel + d))); levelBtns[levelSel - 1].focus();
+    });
+    $('levels').appendChild(b); levelBtns.push(b);
+  }
+  function showLevel() {
+    $('levelOut').textContent = levelSel; $('levelDesc').textContent = LEVEL_DESC[levelSel - 1];
+    levelBtns.forEach((b, i) => { b.setAttribute('aria-checked', i === levelSel - 1 ? 'true' : 'false'); b.tabIndex = i === levelSel - 1 ? 0 : -1; });
+  }
+  function setLevel(n) {
+    levelSel = n; showLevel();
+    try { localStorage.setItem('othello2.level', String(n)); } catch (e) { /* ignore */ }
+  }
   showLevel();
+  // leaving the page loses a game in progress: let the browser ask first
+  window.addEventListener('beforeunload', (e) => {
+    if (running && !over && hist.length > 1 && !/[?&]demo/.test(location.search)) { e.preventDefault(); e.returnValue = ''; }
+  });
   render();
 
   // ?kifu=F5d6... : open a game record for replay
@@ -455,7 +491,7 @@
   // ?demo[=level] : self-running game used for automated screenshots / smoke tests
   const demo = /[?&]demo(?:=(\d+))?/.exec(location.search);
   if (demo) {
-    if (demo[1]) lv.value = demo[1];
+    if (demo[1]) levelSel = Math.max(1, Math.min(10, +demo[1]));
     showLevel(); start();
     setInterval(() => {
       const st = cur();

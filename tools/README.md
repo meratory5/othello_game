@@ -108,7 +108,7 @@ node tools/cdp_shot.js "file:///…/index.html?demo=8" shot.png 12000 390 844 "d
 ## Python 版との突き合わせ `dump_vectors.js`
 
 ```
-node tools/dump_vectors.js ../../python/othello_game_2/data/test_vectors.json
+node tools/dump_vectors.js ../../python/othello_game/data/test_vectors.json
 ```
 
 ランダムな対局の3,600局面について、合法手・評価値・正規化キー・深さ3の探索値・残り10手以下の完全読みの値・定石の手を出力します。Python 版の `test_engine.py` がこれと一致することを確かめます。

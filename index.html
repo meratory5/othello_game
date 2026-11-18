@@ -9,7 +9,7 @@
 <body>
   <main class="app">
     <header class="masthead">
-      <h1>オセロ <span class="ni">弐</span></h1>
+      <h1><a href="index.html" title="最初の画面に戻る（再読み込み）">オセロ <span class="ni">弐</span></a></h1>
       <p class="tagline">パターン評価 × 終盤完全読み × 定石</p>
       <nav class="nav"><a href="lessons.html">オセロ講座・練習問題</a><a href="about.html">AIのしくみ</a></nav>
     </header>
@@ -49,8 +49,8 @@
     </section>
 
     <aside class="panel">
-      <fieldset class="group" id="settings">
-        <legend>対局設定</legend>
+      <div class="group" id="settings">
+        <h2>対局設定</h2>
         <div class="row">
           <span class="label">あなたの色</span>
           <div class="seg" role="radiogroup" aria-label="あなたの色">
@@ -59,8 +59,9 @@
           </div>
         </div>
         <div class="row">
-          <label class="label" for="level">AIの強さ <output id="levelOut">5</output></label>
-          <input type="range" id="level" min="1" max="10" step="1" value="5">
+          <span class="label" id="levelLabel">AIの強さ <output id="levelOut">5</output></span>
+          <div class="levels" id="levels" role="radiogroup" aria-labelledby="levelLabel"></div>
+          <div class="level-scale" aria-hidden="true"><span>弱い</span><span>強い</span></div>
           <p class="level-desc" id="levelDesc"></p>
         </div>
         <div class="row checks">
@@ -68,7 +69,7 @@
           <label><input type="checkbox" id="showEval" checked> 形勢を表示</label>
           <label><input type="checkbox" id="showCoach" checked> 解説（AIの手の特徴・自分の手の講評）</label>
         </div>
-      </fieldset>
+      </div>
 
       <div class="actions">
         <button type="button" class="btn primary" id="start">対局開始</button>
